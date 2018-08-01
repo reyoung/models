@@ -101,14 +101,8 @@ def multi_head_attention(queries,
         """
         scaled_q = layers.scale(x=q, scale=d_model**-0.5)
         product = layers.matmul(x=scaled_q, y=k, transpose_y=True)
-        weights = layers.reshape(
-            x=layers.elementwise_add(
-                x=product, y=attn_bias) if attn_bias else product,
-            shape=[-1, product.shape[-1]],
-            actual_shape=pre_softmax_shape,
-            act="softmax")
-        weights = layers.reshape(
-            x=weights, shape=product.shape, actual_shape=post_softmax_shape)
+        product = product + attn_bias if attn_bias else product
+        weights = layers.softmax(input=product)
         if dropout_rate:
             weights = layers.dropout(
                 weights, dropout_prob=dropout_rate, is_test=False)
