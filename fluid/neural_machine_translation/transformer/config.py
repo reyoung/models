@@ -114,10 +114,10 @@ seq_len = ModelHyperParams.max_length
 input_descs = {
     # The actual data shape of src_word is:
     # [batch_size * max_src_len_in_batch, 1]
-    "src_word": [(batch_size * seq_len, 1L), "int64", 2],
+    "src_word": [(batch_size, seq_len, 1L), "int64", 2],
     # The actual data shape of src_pos is:
     # [batch_size * max_src_len_in_batch, 1]
-    "src_pos": [(batch_size * seq_len, 1L), "int64"],
+    "src_pos": [(batch_size, seq_len, 1L), "int64"],
     # This input is used to remove attention weights on paddings in the
     # encoder.
     # The actual data shape of src_slf_attn_bias is:
@@ -132,11 +132,11 @@ input_descs = {
     "src_slf_attn_post_softmax_shape": [(4L, ), "int32"],
     # The actual data shape of trg_word is:
     # [batch_size * max_trg_len_in_batch, 1]
-    "trg_word": [(batch_size * seq_len, 1L), "int64",
+    "trg_word": [(batch_size, seq_len, 1L), "int64",
                  2],  # lod_level is only used in fast decoder.
     # The actual data shape of trg_pos is:
     # [batch_size * max_trg_len_in_batch, 1]
-    "trg_pos": [(batch_size * seq_len, 1L), "int64"],
+    "trg_pos": [(batch_size, seq_len, 1L), "int64"],
     # This input is used to remove attention weights on paddings and
     # subsequent words in the decoder.
     # The actual data shape of trg_slf_attn_bias is:

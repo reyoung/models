@@ -200,10 +200,10 @@ def prepare_encoder_decoder(src_word,
         param_attr=fluid.ParamAttr(
             name=pos_enc_param_name, trainable=False))
     enc_input = src_word_emb + src_pos_enc
-    enc_input = layers.reshape(
-        x=enc_input,
-        shape=[batch_size, seq_len, src_emb_dim],
-        actual_shape=src_data_shape)
+    #enc_input = layers.reshape(
+    #    x=enc_input,
+    #    shape=[batch_size, seq_len, src_emb_dim],
+    #    actual_shape=src_data_shape)
     return layers.dropout(
         enc_input, dropout_prob=dropout_rate,
         is_test=False) if dropout_rate else enc_input

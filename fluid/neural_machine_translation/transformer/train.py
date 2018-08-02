@@ -128,7 +128,7 @@ def pad_batch_data(insts,
     # will be masked out by weights and make no effect on parameter gradients.
     inst_data = np.array(
         [inst + [pad_idx] * (max_len - len(inst)) for inst in insts])
-    return_list += [inst_data.astype("int64").reshape([-1, 1])]
+    return_list += [inst_data.astype("int64")[:, :, np.newaxis]]
     if is_label:  # label weight
         inst_weight = np.array(
             [[1.] * len(inst) + [0.] * (max_len - len(inst)) for inst in insts])
@@ -138,7 +138,7 @@ def pad_batch_data(insts,
             range(1, len(inst) + 1) + [0] * (max_len - len(inst))
             for inst in insts
         ])
-        return_list += [inst_pos.astype("int64").reshape([-1, 1])]
+        return_list += [inst_pos.astype("int64")[:, :, np.newaxis]]
     if return_attn_bias:
         if is_target:
             # This is used to avoid attention on paddings and subsequent
@@ -372,11 +372,17 @@ def train_loop(exe, train_progm, dev_count, sum_cost, avg_cost, token_num,
             total_dict = dict(data_input_dict.items() + util_input_dict.items())
             for name in pos_enc_param_names:
                 total_dict[name] = pos_enc
-            yield [total_dict[item] for item in feed_order]
+            
+            res = [total_dict[item] for item in feed_order]
+            import pdb
+            pdb.set_trace()
+            yield res
             if batch_id / 8 == 20:
                 break
 
     pyreader.decorate_tensor_provider(train_reader_provider)
+    import pdb
+    pdb.set_trace()
     batch_time = []
     for pass_id in xrange(TrainTaskConfig.pass_num):
         pyreader.start()
@@ -388,6 +394,7 @@ def train_loop(exe, train_progm, dev_count, sum_cost, avg_cost, token_num,
                 outs = train_exe.run(fetch_list=[sum_cost.name, token_num.name])
                 batch_time.append(time.time() - beg)
             except:
+                print("reset")
                 pyreader.reset()
                 break
             sum_cost_val, token_num_val = np.array(outs[0]), np.array(outs[1])
