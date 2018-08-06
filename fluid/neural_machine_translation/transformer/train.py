@@ -374,15 +374,12 @@ def train_loop(exe, train_progm, dev_count, sum_cost, avg_cost, token_num,
                 total_dict[name] = pos_enc
             
             res = [total_dict[item] for item in feed_order]
-            import pdb
-            pdb.set_trace()
+            res[-2] = res[-2].reshape((-1, 1))
             yield res
             if batch_id / 8 == 20:
                 break
 
     pyreader.decorate_tensor_provider(train_reader_provider)
-    import pdb
-    pdb.set_trace()
     batch_time = []
     for pass_id in xrange(TrainTaskConfig.pass_num):
         pyreader.start()
@@ -393,7 +390,7 @@ def train_loop(exe, train_progm, dev_count, sum_cost, avg_cost, token_num,
                 print pyreader.queue.size()
                 outs = train_exe.run(fetch_list=[sum_cost.name, token_num.name])
                 batch_time.append(time.time() - beg)
-            except:
+            except fluid.core.EOFException:
                 print("reset")
                 pyreader.reset()
                 break
