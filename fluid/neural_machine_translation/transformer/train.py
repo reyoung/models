@@ -501,9 +501,10 @@ def train(args):
 
     if args.local:
         print("local start_up:")
-        train_loop(exe,
-                   fluid.default_main_program(), dev_count, sum_cost, avg_cost,
-                   lr_scheduler, token_num, predict)
+        train_loop(
+            exe,
+            fluid.transpiler.memory_optimize(fluid.default_main_program()),
+            dev_count, sum_cost, avg_cost, lr_scheduler, token_num, predict)
     else:
         port = os.getenv("PADDLE_PORT", "6174")
         pserver_ips = os.getenv("PADDLE_PSERVERS")  # ip,ip...
