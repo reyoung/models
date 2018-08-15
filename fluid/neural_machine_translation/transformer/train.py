@@ -11,7 +11,6 @@ import paddle.fluid as fluid
 import reader
 from config import *
 from model import transformer, position_encoding_init
-from optim import LearningRateScheduler
 
 
 def parse_args():
@@ -336,12 +335,11 @@ def test_context(train_progm, avg_cost, train_exe, dev_count, data_input_names,
     return test
 
 
-def train_loop(exe, train_progm, dev_count, sum_cost, avg_cost, lr_scheduler,
-               token_num, predict):
+def train_loop(exe, train_progm, dev_count, sum_cost, avg_cost, token_num,
+               predict):
     # Initialize the parameters.
     if TrainTaskConfig.ckpt_path:
         fluid.io.load_persistables(exe, TrainTaskConfig.ckpt_path)
-        lr_scheduler.current_steps = TrainTaskConfig.start_step
     else:
         print "init fluid.framework.default_startup_program"
         exe.run(fluid.framework.default_startup_program())
@@ -399,8 +397,6 @@ def train_loop(exe, train_progm, dev_count, sum_cost, avg_cost, lr_scheduler,
         for batch_id, data in enumerate(train_data()):
             feed_list = []
             total_num_token = 0
-            if args.local:
-                lr_rate = lr_scheduler.update_learning_rate()
             for place_id, data_buffer in enumerate(
                     split_data(
                         data, num_part=dev_count)):
@@ -411,10 +407,6 @@ def train_loop(exe, train_progm, dev_count, sum_cost, avg_cost, lr_scheduler,
                 total_num_token += num_token
                 feed_kv_pairs = data_input_dict.items() + util_input_dict.items(
                 )
-                if args.local:
-                    feed_kv_pairs += {
-                        lr_scheduler.learning_rate.name: lr_rate
-                    }.items()
                 feed_list.append(dict(feed_kv_pairs))
 
                 if not init:
@@ -498,15 +490,11 @@ def train(args):
         ModelHyperParams.d_value, ModelHyperParams.d_model,
         ModelHyperParams.d_inner_hid, ModelHyperParams.dropout,
         ModelHyperParams.weight_sharing, TrainTaskConfig.label_smooth_eps)
-    lr_scheduler = LearningRateScheduler(ModelHyperParams.d_model,
-                                         TrainTaskConfig.warmup_steps,
-                                         TrainTaskConfig.learning_rate)
 
     if args.sync:
-        lr_decay = fluid.layers \
-            .learning_rate_scheduler \
-            .noam_decay(ModelHyperParams.d_model,
-                        TrainTaskConfig.warmup_steps)
+        lr_decay = fluid.layers.learning_rate_scheduler.noam_decay(
+            ModelHyperParams.d_model,
+            TrainTaskConfig.warmup_steps) * TrainTaskConfig.learning_rate
 
         optimizer = fluid.optimizer.Adam(
             learning_rate=lr_decay,
@@ -522,7 +510,7 @@ def train(args):
         print("local start_up:")
         train_loop(exe,
                    fluid.default_main_program(), dev_count, sum_cost, avg_cost,
-                   lr_scheduler, token_num, predict)
+                   token_num, predict)
     else:
         port = os.getenv("PADDLE_PORT", "6174")
         pserver_ips = os.getenv("PADDLE_PSERVERS")  # ip,ip...
@@ -559,7 +547,7 @@ def train(args):
             with open('trainer_prog.desc', 'w') as f:
                 f.write(str(trainer_prog))
             train_loop(exe, trainer_prog, dev_count, sum_cost, avg_cost,
-                       lr_scheduler, token_num, predict)
+                       token_num, predict)
         else:
             print("environment var TRAINER_ROLE should be TRAINER os PSERVER")
 
