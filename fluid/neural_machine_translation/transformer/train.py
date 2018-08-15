@@ -502,27 +502,20 @@ def train(args):
                                          TrainTaskConfig.warmup_steps,
                                          TrainTaskConfig.learning_rate)
 
-    if args.local:
-        optimizer = fluid.optimizer.Adam(
-            learning_rate=lr_scheduler.learning_rate,
-            beta1=TrainTaskConfig.beta1,
-            beta2=TrainTaskConfig.beta2,
-            epsilon=TrainTaskConfig.eps)
-        optimizer.minimize(sum_cost)
-    elif args.sync == False:
-        optimizer = fluid.optimizer.SGD(0.003)
-        optimizer.minimize(sum_cost)
-    else:
-        lr_decay = fluid.layers\
-         .learning_rate_scheduler\
-         .noam_decay(ModelHyperParams.d_model,
-            TrainTaskConfig.warmup_steps)
+    if args.sync:
+        lr_decay = fluid.layers \
+            .learning_rate_scheduler \
+            .noam_decay(ModelHyperParams.d_model,
+                        TrainTaskConfig.warmup_steps)
 
         optimizer = fluid.optimizer.Adam(
             learning_rate=lr_decay,
             beta1=TrainTaskConfig.beta1,
             beta2=TrainTaskConfig.beta2,
             epsilon=TrainTaskConfig.eps)
+        optimizer.minimize(sum_cost)
+    else:
+        optimizer = fluid.optimizer.SGD(0.003)
         optimizer.minimize(sum_cost)
 
     if args.local:
