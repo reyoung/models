@@ -372,11 +372,14 @@ def train_loop(exe, train_progm, dev_count, sum_cost, avg_cost, lr_scheduler,
     # use token average cost among multi-devices. and the gradient scale is
     # `1 / token_number` for average cost.
     build_strategy.gradient_scale_strategy = fluid.BuildStrategy.GradientScaleStrategy.Customized
+    exec_strategy = fluid.ExecutionStrategy()
+    exec_strategy.use_experimental_executor = True
     train_exe = fluid.ParallelExecutor(
         use_cuda=TrainTaskConfig.use_gpu,
         loss_name=sum_cost.name,
         main_program=train_progm,
-        build_strategy=build_strategy)
+        build_strategy=build_strategy,
+        exec_strategy=exec_strategy)
 
     data_input_names = encoder_data_input_fields + decoder_data_input_fields[:
                                                                              -1] + label_data_input_fields
